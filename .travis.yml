@@ -5,14 +5,16 @@ git:
 node_js:
   - "6"
   - "8"
+  - "10"
 install:
   - bundle install --deployment --jobs=3 --retry=3 --clean
-  - npm install
+  - if [[ $(npm -v | cut -d. -f1) -lt "6" ]]; then npm install; fi
+  - if [[ $(npm -v | cut -d. -f1) -ge "6" ]]; then npm ci; fi
 script:
   - npm test
-  - if [ "$TRAVIS_NODE_VERSION" = "8" ]; then npm run check-broken-links; fi
+  - if [ "$TRAVIS_NODE_VERSION" = "10" ]; then npm run check-broken-links; fi
 after_success:
-  - if [ "$TRAVIS_NODE_VERSION" = "8" ]; then npm run coveralls; fi
+  - if [ "$TRAVIS_NODE_VERSION" = "10" ]; then npm run coveralls; fi
 stages:
   - test
   - name: browser
@@ -20,11 +22,12 @@ stages:
 jobs:
   include:
     - stage: browser
-      node_js: 8
+      node_js: 10
       script: if ! git log --format=%B --no-merges -n 1 | grep '\[skip browser\]'; then npm run js-test-cloud; fi
 cache:
   directories:
-    - node_modules
+    - if [[ $(npm -v | cut -d. -f1) -lt "6" ]]; then "node_modules"; fi
+    - if [[ $(npm -v | cut -d. -f1) -ge "6" ]]; then "$HOME/.npm"; fi
     - vendor/bundle
 notifications:
   email: false
